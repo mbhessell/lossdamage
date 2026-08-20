@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Loss and Damage Claim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #16203A;
+    --slate: #1B2A4A;
+    --slate-light: #2E4270;
+    --amber: #E8963C;
+    --amber-deep: #C97418;
+    --paper: #F6F5F2;
+    --card: #FFFFFF;
+    --line: #DDDCD6;
+    --muted: #6B7178;
+    --danger: #B3392C;
+    --danger-bg: #FBEAE7;
+    --success: #2F7A5C;
+    --success-bg: #E9F3EE;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(22,32,58,0.06), 0 8px 24px -12px rgba(22,32,58,0.15);
+  }
+
+  * { box-sizing: border-box; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: -1px -1px;
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 64px;
+  }
+
+  .masthead { width: 100%; max-width: 720px; margin-bottom: 20px; }
+  .masthead-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .masthead h1 {
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 800;
+    font-size: clamp(22px, 4vw, 28px);
+    letter-spacing: -0.01em;
+    margin: 0;
+    color: var(--slate);
+  }
+  .case-id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 4px 9px;
+    white-space: nowrap;
+  }
+  .masthead p.sub { margin: 6px 0 0; color: var(--muted); font-size: 14.5px; }
+
+  .stepper { width: 100%; max-width: 720px; display: flex; gap: 4px; margin-bottom: 22px; }
+  .step-seg { flex: 1; height: 5px; border-radius: 3px; background: var(--line); position: relative; overflow: hidden; }
+  .step-seg.done { background: var(--slate); }
+  .step-seg.current { background: var(--line); }
+  .step-seg.current::after {
+    content: ''; position: absolute; inset: 0; background: var(--amber); width: 45%; border-radius: 3px;
+  }
+  .step-label-row {
+    width: 100%; max-width: 720px; display: flex; justify-content: space-between; margin-bottom: 24px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+
+  .card {
+    width: 100%; max-width: 720px; background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px clamp(20px, 5vw, 40px);
+    animation: rise 0.35s ease;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--amber-deep); margin: 0 0 6px;
+  }
+  h2.screen-title { font-family: 'Libre Franklin', sans-serif; font-weight: 700; font-size: 22px; margin: 0 0 6px; color: var(--slate); }
+  p.screen-desc { margin: 0 0 26px; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
+
+  .field { margin-bottom: 20px; }
+  .field-row { display: flex; gap: 16px; }
+  .field-row .field { flex: 1; }
+  @media (max-width: 520px) { .field-row { flex-direction: column; gap: 0; } }
+
+  label { display: block; font-size: 13.5px; font-weight: 600; color: var(--slate); margin-bottom: 6px; }
+  label .req { color: var(--danger); margin-left: 2px; }
+  label .opt { color: var(--muted); font-weight: 500; margin-left: 4px; font-size: 12px; text-transform: none; }
+
+  input[type="text"], input[type="tel"], input[type="email"], input[type="date"],
+  input[type="number"], textarea, select {
+    width: 100%; font-family: 'Inter', sans-serif; font-size: 15px; padding: 11px 13px;
+    border: 1.5px solid var(--line); border-radius: 7px; background: var(--paper); color: var(--ink);
+    transition: border-color 0.15s;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--slate-light); background: var(--card); }
+  textarea { resize: vertical; min-height: 90px; font-family: inherit; }
+
+  .checkline {
+    display: flex; align-items: flex-start; gap: 11px; padding: 14px 16px;
+    border: 1.5px solid var(--line); border-radius: 8px; background: var(--paper); cursor: pointer;
+    margin-bottom: 10px; transition: border-color 0.15s, background 0.15s;
+  }
+  .checkline:hover { border-color: var(--slate-light); }
+  .checkline.checked { border-color: var(--slate); background: #EEF1F7; }
+  .checkline input { margin-top: 2px; width: 17px; height: 17px; accent-color: var(--slate); flex-shrink: 0; }
+  .checkline .ct-label { font-weight: 600; font-size: 14.5px; color: var(--ink); }
+  .checkline .ct-sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+
+  .btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; gap: 12px; }
+  button {
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14.5px; padding: 12px 22px;
+    border-radius: 7px; border: none; cursor: pointer; transition: filter 0.15s, transform 0.1s;
+  }
+  button:active { transform: translateY(1px); }
+  .btn-primary { background: var(--slate); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.12); }
+  .btn-primary:focus-visible, .btn-secondary:focus-visible, .btn-ghost:focus-visible {
+    outline: 3px solid var(--amber); outline-offset: 2px;
+  }
+  .btn-secondary { background: transparent; color: var(--slate); border: 1.5px solid var(--line); }
+  .btn-secondary:hover { border-color: var(--slate); }
+  .btn-ghost { background: transparent; color: var(--muted); font-weight: 500; }
+  .btn-submit { background: var(--amber-deep); color: #fff; }
+  .btn-submit:hover { filter: brightness(1.1); }
+  .btn-submit:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+  .btn-add {
+    width: 100%; background: transparent; border: 1.5px dashed var(--line); color: var(--slate);
+    padding: 13px; border-radius: 8px; font-weight: 600; font-size: 14px; margin-top: 4px;
+  }
+  .btn-add:hover { border-color: var(--slate); background: #EEF1F7; }
+
+  .home-icon {
+    width: 52px; height: 52px; border-radius: 12px; background: var(--slate);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 18px;
+  }
+  .home-icon svg { width: 26px; height: 26px; }
+
+  .line-item-block {
+    border: 1.5px solid var(--line); border-radius: 8px; padding: 18px; margin-bottom: 14px; position: relative;
+  }
+  .line-item-block h4 {
+    margin: 0 0 14px; font-family: 'Libre Franklin', sans-serif; font-size: 14.5px; color: var(--slate);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .line-item-remove {
+    color: var(--danger); background: none; border: none; cursor: pointer; font-size: 12.5px;
+    font-weight: 600; padding: 2px 4px;
+  }
+  .line-item-remove:disabled { color: var(--muted); cursor: not-allowed; }
+
+  .dropzone {
+    border: 2px dashed var(--line); border-radius: 10px; padding: 28px 16px; text-align: center;
+    color: var(--muted); font-size: 14px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  }
+  .dropzone:hover, .dropzone.drag { border-color: var(--amber); background: #FFF8EF; }
+  .dropzone strong { color: var(--slate); }
+  .photo-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .photo-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px; font-size: 13.5px; }
+  .photo-item .thumb {
+    width: 36px; height: 36px; border-radius: 5px; object-fit: cover; flex-shrink: 0;
+    background: var(--paper); border: 1px solid var(--line);
+  }
+  .photo-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .photo-item select { width: auto; padding: 5px 8px; font-size: 12.5px; }
+  .photo-item .rm { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 13px; padding: 4px 6px; }
+  .upload-note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+
+  .rv-section { margin-bottom: 22px; }
+  .rv-section h4 {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--amber-deep); border-bottom: 1px solid var(--line); padding-bottom: 6px; margin: 0 0 10px;
+  }
+  .rv-row { display: flex; justify-content: space-between; gap: 16px; padding: 5px 0; font-size: 14px; }
+  .rv-row .k { color: var(--muted); }
+  .rv-row .v { color: var(--ink); font-weight: 500; text-align: right; max-width: 60%; }
+  .rv-edit { font-size: 12px; color: var(--slate-light); background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; }
+  .rv-product { border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; margin-bottom: 8px; }
+  .rv-product .rv-row { padding: 3px 0; }
+
+  .success-wrap { text-align: center; padding: 20px 0; }
+  .success-check {
+    width: 64px; height: 64px; border-radius: 50%; background: var(--success-bg); color: var(--success);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 18px;
+  }
+
+  .sig-tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .sig-tab {
+    padding:8px 16px; border-radius:7px; border:1.5px solid var(--line);
+    background:var(--paper); font-weight:600; font-size:13.5px; cursor:pointer; color:var(--muted);
+    font-family:'Inter', sans-serif;
+  }
+  .sig-tab.active { background:var(--slate); color:#fff; border-color:var(--slate); }
+  .sig-canvas-wrap { position:relative; }
+  .sig-canvas {
+    width:100%; height:170px; display:block; border:1.5px solid var(--line); border-radius:8px; background:#fff;
+    touch-action:none; cursor:crosshair;
+  }
+  .sig-canvas-placeholder { position:absolute; left:16px; bottom:14px; color:var(--muted); font-size:13px; pointer-events:none; font-style:italic; }
+  .sig-actions { margin-top:10px; display:flex; justify-content:flex-end; }
+  .sig-typed-input {
+    width:100%; font-family:'Dancing Script', cursive; font-size:32px; padding:16px 14px 10px;
+    border:none; border-bottom:2px solid var(--slate); background:#fff; color:var(--ink); border-radius:6px 6px 0 0;
+  }
+  .sig-typed-input:focus { outline:none; border-color:var(--amber); }
+  .sig-timestamp-note { font-size:12px; color:var(--muted); margin-top:8px; }
+  .sig-block { margin-bottom: 30px; padding-bottom: 26px; border-bottom: 1px solid var(--line); }
+  .sig-block:last-of-type { border-bottom: none; }
+
+  .hp-field { position: absolute; left: -9999px; top: -9999px; opacity: 0; height: 0; overflow: hidden; }
+
+  .error-banner {
+    background: var(--danger-bg); color: var(--danger); border-radius: 7px; padding: 10px 14px;
+    font-size: 13.5px; margin-bottom: 16px; display: none;
+  }
+  .error-banner.show { display: block; }
+
+  .helper-note { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+
+  footer { margin-top: 28px; font-size: 12px; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="masthead-row">
+    <h1>Loss and Damage Claim</h1>
+    <span class="case-id" id="caseIdBadge">DRAFT · UNSAVED</span>
+  </div>
+  <p class="sub">For carriers and FEB employees to jointly document and sign off on a loss/damage claim at time of delivery. No login required.</p>
+</div>
+
+<div class="stepper" id="stepper"></div>
+<div class="step-label-row" id="stepLabelRow">
+  <span id="stepLabelLeft">Start</span>
+  <span id="stepLabelRight">Complete</span>
+</div>
+
+<div class="card">
+
+  <!-- HOME -->
+  <section class="screen active" data-screen="home">
+    <div class="home-icon">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 7L12 3L21 7V17L12 21L3 17V7Z" stroke="#F6F5F2" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M3 7L12 11L21 7" stroke="#F6F5F2" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M12 11V21" stroke="#F6F5F2" stroke-width="1.6"/>
+      </svg>
+    </div>
+    <p class="eyebrow">Before you start</p>
+    <h2 class="screen-title">Report a loss or damage claim</h2>
+    <p class="screen-desc">
+      Use this form to document shipment loss or damage at time of delivery. It takes about 5–10 minutes,
+      and works for one product or several. Both the carrier representative and the FEB employee can sign
+      at the end, in the same sitting — no separate e-signature step needed.
+    </p>
+    <div class="btn-row" style="justify-content:flex-end;">
+      <button class="btn-primary" onclick="goTo('claim')">Start Claim →</button>
+    </div>
+  </section>
+
+  <!-- CLAIM / SHIPMENT INFO -->
+  <section class="screen" data-screen="claim">
+    <p class="eyebrow">Step 1</p>
+    <h2 class="screen-title">Shipment Information</h2>
+    <p class="screen-desc">Basic facts about the shipment this claim is for.</p>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Shipment Number <span class="req">*</span></label>
+        <input type="text" id="f_shipmentNumber" placeholder="Shipment Number" required>
+      </div>
+      <div class="field">
+        <label>Receive Date <span class="req">*</span></label>
+        <input type="date" id="f_receiveDate" required>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Carrier <span class="req">*</span></label>
+      <input type="text" id="f_carrierCompany" placeholder="Carrier / trucking company name" required>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Trailer Number <span class="req">*</span></label>
+        <input type="text" id="f_trailerNumber" placeholder="Trailer Number" required>
+      </div>
+      <div class="field">
+        <label>Seal Number <span class="req">*</span></label>
+        <input type="text" id="f_sealNumber" placeholder="Seal Number" required>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Seal Intact <span class="req">*</span></label>
+      <select id="f_sealIntact" required>
+        <option value="">Select…</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="goTo('home')">← Back</button>
+      <button class="btn-primary" onclick="validateClaim()">Next →</button>
+    </div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section class="screen" data-screen="products">
+    <p class="eyebrow">Step 2</p>
+    <h2 class="screen-title">Products</h2>
+    <p class="screen-desc">Add every product involved in this claim. You can add as many as you need.</p>
+
+    <div id="productBlocks"></div>
+    <button type="button" class="btn-add" onclick="addProduct()">+ Add another product</button>
+    <p class="helper-note" id="productsError" style="display:none; color:var(--danger);">Please fill in Supplier, Product, and Quantity for each product before continuing.</p>
+
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="goTo('claim')">← Back</button>
+      <button class="btn-primary" onclick="validateProducts()">Next →</button>
+    </div>
+  </section>
+
+  <!-- DESCRIPTION / LABOR -->
+  <section class="screen" data-screen="description">
+    <p class="eyebrow">Step 3</p>
+    <h2 class="screen-title">Description & Labor</h2>
+    <p class="screen-desc">Describe what happened to the shipment.</p>
+
+    <div class="field">
+      <label>Description of Loss/Damage <span class="req">*</span></label>
+      <textarea id="f_description" placeholder="What happened, in your own words" required></textarea>
+    </div>
+
+    <div class="field">
+      <label>Labor Costs <span class="opt">(optional — if known)</span></label>
+      <input type="text" id="f_laborCosts" placeholder="e.g. $45.00 or an estimate">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="goTo('products')">← Back</button>
+      <button class="btn-primary" onclick="validateDescription()">Next →</button>
+    </div>
+  </section>
+
+  <!-- PHOTOS / DOCUMENTS -->
+  <section class="screen" data-screen="photos">
+    <p class="eyebrow">Step 4</p>
+    <h2 class="screen-title">Photos & Documents</h2>
+    <p class="screen-desc">Add the Bill of Lading (BOL) and photos of the damaged/short product. Photos, PDFs, and iPhone (HEIC) photos are all supported.</p>
+
+    <div class="field">
+      <label>Category (applies to next upload)</label>
+      <select id="photoCategory">
+        <option>Bill of Lading (BOL)</option>
+        <option>Damage Photo</option>
+        <option>Other Document</option>
+      </select>
+    </div>
+
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('photoInput').click()">
+      <strong>Tap to add photos or PDFs</strong><br>or drag files here
+      <input type="file" id="photoInput" accept="image/*,.heic,.heif,application/pdf,.pdf" multiple style="display:none" onchange="handleFiles(this.files); this.value='';">
+    </div>
+    <div class="photo-list" id="photoList"></div>
+    <p class="upload-note" id="uploadNote"></p>
+
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="goTo('description')">← Back</button>
+      <button class="btn-primary" onclick="goTo('people')">Next →</button>
+    </div>
+  </section>
+
+  <!-- CARRIER / EMPLOYEE INFO -->
+  <section class="screen" data-screen="people">
+    <p class="eyebrow">Step 5</p>
+    <h2 class="screen-title">Carrier & Employee</h2>
+    <p class="screen-desc">Who's completing this claim, and who's representing the carrier (if present).</p>
+
+    <div class="field">
+      <label>Employee Name <span class="req">*</span></label>
+      <input type="text" id="f_employeeName" placeholder="FEB employee completing this claim" required>
+    </div>
+
+    <div class="field">
+      <label>Carrier Name <span class="opt">(optional)</span></label>
+      <input type="text" id="f_carrierRepName" placeholder="Name of the carrier company / representative">
+    </div>
+
+    <div class="field">
+      <label>Carrier Driver Name <span class="opt">(optional)</span></label>
+      <input type="text" id="f_carrierDriverName" placeholder="Name of the specific driver, if different">
+    </div>
+    <p class="helper-note">All three carrier fields are optional — it's fine to submit if the driver already left before any of this could be captured.</p>
+
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="goTo('photos')">← Back</button>
+      <button class="btn-primary" onclick="validatePeople()">Review Claim →</button>
+    </div>
+  </section>
+
+  <!-- REVIEW + SIGNATURES -->
+  <section class="screen" data-screen="review">
+    <p class="eyebrow">Final Step</p>
+    <h2 class="screen-title">Review & Sign</h2>
+    <p class="screen-desc">Check everything below, then sign. Both the carrier representative and the FEB employee can sign here, together.</p>
+
+    <div class="error-banner" id="submitError">Something went wrong submitting your claim. Please try again.</div>
+
+    <div id="reviewContent"></div>
+
+    <!-- Carrier signature (optional) -->
+    <div class="sig-block">
+      <label>Carrier Representative Signature <span class="opt">(optional)</span></label>
+      <p class="screen-desc" style="margin-bottom:14px;">If the carrier representative is present, they can sign below. Leave blank if they've already left.</p>
+
+      <div class="sig-tabs">
+        <button type="button" class="sig-tab active" id="sigTabDraw_carrier" onclick="switchSignatureMode('carrier','draw')">Draw Signature</button>
+        <button type="button" class="sig-tab" id="sigTabType_carrier" onclick="switchSignatureMode('carrier','type')">Type Name</button>
+      </div>
+
+      <div id="sigDrawWrap_carrier">
+        <div class="sig-canvas-wrap">
+          <canvas id="sigCanvas_carrier" class="sig-canvas"></canvas>
+          <span class="sig-canvas-placeholder" id="sigPlaceholder_carrier">Sign here — finger or mouse</span>
+        </div>
+        <div class="sig-actions">
+          <button type="button" class="btn-secondary" onclick="clearSignature('carrier')">Clear</button>
+        </div>
+      </div>
+
+      <div id="sigTypeWrap_carrier" style="display:none;">
+        <input type="text" id="sigTypedName_carrier" class="sig-typed-input" placeholder="Type carrier representative's full name">
+      </div>
+
+      <p class="sig-timestamp-note">The date and time will be recorded automatically when this claim is submitted.</p>
+    </div>
+
+    <!-- Employee signature (required) -->
+    <div class="sig-block">
+      <label>Employee Acknowledgement <span class="req">*</span></label>
+      <p class="screen-desc" style="margin-bottom:14px;">By signing below, you confirm the information in this claim is accurate to the best of your knowledge.</p>
+
+      <div class="sig-tabs">
+        <button type="button" class="sig-tab active" id="sigTabDraw_employee" onclick="switchSignatureMode('employee','draw')">Draw Signature</button>
+        <button type="button" class="sig-tab" id="sigTabType_employee" onclick="switchSignatureMode('employee','type')">Type Name</button>
+      </div>
+
+      <div id="sigDrawWrap_employee">
+        <div class="sig-canvas-wrap">
+          <canvas id="sigCanvas_employee" class="sig-canvas"></canvas>
+          <span class="sig-canvas-placeholder" id="sigPlaceholder_employee">Sign here — finger or mouse</span>
+        </div>
+        <div class="sig-actions">
+          <button type="button" class="btn-secondary" onclick="clearSignature('employee')">Clear</button>
+        </div>
+      </div>
+
+      <div id="sigTypeWrap_employee" style="display:none;">
+        <input type="text" id="sigTypedName_employee" class="sig-typed-input" placeholder="Type your full legal name" oninput="clearSigError()">
+      </div>
+
+      <p class="sig-timestamp-note">The date and time will be recorded automatically when you submit.</p>
+      <p class="helper-note" id="sigError" style="color:var(--danger); display:none;">Please provide the employee signature before submitting.</p>
+    </div>
+
+    <!-- Honeypot field — real users never see or fill this -->
+    <div class="hp-field" aria-hidden="true">
+      <label for="hp_website">Leave this field blank</label>
+      <input type="text" id="hp_website" name="website" tabindex="-1" autocomplete="off">
+    </div>
+
+    <!-- Turnstile widget mounts here — real site key registered for mbhessell.github.io -->
+    <div class="field" style="margin-top:22px;">
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAAEW0Ocv2OEqbxvSe" data-callback="onTurnstileOK"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="goTo('people')">← Back</button>
+      <button class="btn-submit" id="submitBtn" onclick="submitClaim()">Submit Claim</button>
+    </div>
+  </section>
+
+  <!-- SUCCESS -->
+  <section class="screen" data-screen="success">
+    <div class="success-wrap">
+      <div class="success-check">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 12L9 17L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2 class="screen-title" style="text-align:center;">Claim Submitted</h2>
+      <p class="screen-desc" style="text-align:center; max-width:420px; margin-left:auto; margin-right:auto;">
+        Your claim has been submitted. Reference number: <strong id="finalCaseId"></strong>
+      </p>
+    </div>
+  </section>
+
+</div>
+
+<footer>Submissions are reviewed by FEB Operations.</footer>
+
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+<script>
+/* ========= State ========= */
+const state = {
+  products: [],   // [{id}] — field values read from DOM by id at review/submit time
+  files: [],      // {file, dataUrl, category, name, isPdf}
+  turnstileToken: null
+};
+let nextProductId = 1;
+let turnstileOK = false;
+
+const FLOW = ['home','claim','products','description','photos','people','review','success'];
+
+/* ========= Navigation ========= */
+function goTo(screenName) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelector(`[data-screen="${screenName}"]`).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+  renderStepper(screenName);
+}
+function renderStepper(current) {
+  const idx = FLOW.indexOf(current);
+  const stepper = document.getElementById('stepper');
+  stepper.innerHTML = '';
+  FLOW.forEach((s, i) => {
+    const seg = document.createElement('div');
+    seg.className = 'step-seg' + (i < idx ? ' done' : i === idx ? ' current' : '');
+    stepper.appendChild(seg);
+  });
+  document.getElementById('stepLabelLeft').textContent = screenTitle(current);
+  document.getElementById('stepLabelRight').textContent = idx >= 0 ? `${idx+1} of ${FLOW.length}` : '';
+}
+function screenTitle(s) {
+  const map = {home:'Start', claim:'Shipment', products:'Products', description:'Description', photos:'Photos', people:'Carrier/Employee', review:'Review & Sign', success:'Done'};
+  return map[s] || s;
+}
+function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+
+/* ========= Step 1: Claim / Shipment ========= */
+function validateClaim() {
+  const required = ['f_shipmentNumber','f_receiveDate','f_carrierCompany','f_trailerNumber','f_sealNumber','f_sealIntact'];
+  for (const id of required) {
+    const el = document.getElementById(id);
+    if (!el.value) { el.focus(); el.style.borderColor = 'var(--danger)'; return; }
+    el.style.borderColor = '';
+  }
+  goTo('products');
+}
+
+/* ========= Step 2: Products (dynamic add/remove list) ========= */
+function addProduct() {
+  const id = nextProductId++;
+  state.products.push(id);
+  renderProducts();
+}
+function removeProduct(id) {
+  if (state.products.length <= 1) return; // at least one product required
+  state.products = state.products.filter(x => x !== id);
+  renderProducts();
+}
+function renderProducts() {
+  const wrap = document.getElementById('productBlocks');
+  wrap.innerHTML = '';
+  state.products.forEach((id, i) => {
+    const prefix = `p${id}`;
+    const block = document.createElement('div');
+    block.className = 'line-item-block';
+    block.innerHTML = `
+      <h4>Product ${i+1} <button type="button" class="line-item-remove" onclick="removeProduct(${id})" ${state.products.length<=1?'disabled':''}>Remove</button></h4>
+      <div class="field-row">
+        <div class="field"><label>Supplier <span class="req">*</span></label><input type="text" id="${prefix}_supplier" placeholder="Supplier"></div>
+        <div class="field"><label>Product <span class="req">*</span></label><input type="text" id="${prefix}_product" placeholder="Product"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Quantity <span class="req">*</span></label><input type="number" id="${prefix}_quantity" placeholder="Quantity" min="1"></div>
+        <div class="field"><label>Code Date(s)</label><input type="text" id="${prefix}_codeDates" placeholder="e.g. 04/12, 04/15"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Invoice Number</label><input type="text" id="${prefix}_invoiceNumber" placeholder="Invoice Number"></div>
+        <div class="field"><label>Invoice Date</label><input type="date" id="${prefix}_invoiceDate"></div>
+      </div>
+    `;
+    wrap.appendChild(block);
+  });
+}
+function validateProducts() {
+  const errEl = document.getElementById('productsError');
+  for (const id of state.products) {
+    const prefix = `p${id}`;
+    if (!val(`${prefix}_supplier`) || !val(`${prefix}_product`) || !val(`${prefix}_quantity`)) {
+      errEl.style.display = 'block';
+      document.getElementById(`${prefix}_supplier`).scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+  }
+  errEl.style.display = 'none';
+  goTo('description');
+}
+
+/* ========= Step 3: Description / Labor ========= */
+function validateDescription() {
+  const el = document.getElementById('f_description');
+  if (!el.value.trim()) { el.focus(); el.style.borderColor = 'var(--danger)'; return; }
+  el.style.borderColor = '';
+  goTo('photos');
+}
+
+/* ========= Step 4: Photos / Documents ========= */
+const dropzone = document.getElementById('dropzone');
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+});
+
+function isHeic(file) {
+  const type = (file.type || '').toLowerCase();
+  return type === 'image/heic' || type === 'image/heif' || /\.(heic|heif)$/i.test(file.name);
+}
+
+async function handleFiles(fileList) {
+  const category = document.getElementById('photoCategory').value;
+  const noteEl = document.getElementById('uploadNote');
+  const rejected = [];
+  for (const file of [...fileList]) {
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || isHeic(file);
+    if (!isImage && !isPdf) { rejected.push(file.name); continue; }
+
+    if (isPdf) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.files.push({ file, dataUrl: reader.result, category, name: file.name, isPdf: true });
+        renderPhotoList();
+      };
+      reader.readAsDataURL(file);
+      continue;
+    }
+
+    // Image (including HEIC/HEIF from iPhones) — convert HEIC to JPEG first, then downscale/compress.
+    let workingFile = file;
+    if (isHeic(file)) {
+      try {
+        noteEl.textContent = `Converting ${file.name} from HEIC…`;
+        const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+        const blob = Array.isArray(converted) ? converted[0] : converted;
+        workingFile = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+      } catch (err) {
+        rejected.push(file.name + ' (could not convert HEIC photo)');
+        continue;
+      } finally {
+        noteEl.textContent = '';
+      }
+    }
+    compressImage(workingFile).then(dataUrl => {
+      state.files.push({ file: workingFile, dataUrl, category, name: workingFile.name, isPdf: false });
+      renderPhotoList();
+    });
+  }
+  if (rejected.length) {
+    alert('Only photos and PDF files can be attached. Not added: ' + rejected.join(', '));
+  }
+}
+function compressImage(file, maxDim = 1600, quality = 0.75) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const scale = maxDim / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(e.target.result);
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function renderPhotoList() {
+  const list = document.getElementById('photoList');
+  list.innerHTML = '';
+  state.files.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'photo-item';
+    const thumb = p.isPdf
+      ? `<div class="thumb" style="display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#B3392C;background:#FBEAE7;">PDF</div>`
+      : `<img class="thumb" src="${p.dataUrl}">`;
+    row.innerHTML = `
+      ${thumb}
+      <span class="name">${p.name}</span>
+      <select onchange="state.files[${i}].category=this.value">
+        ${['Bill of Lading (BOL)','Damage Photo','Other Document'].map(c => `<option ${c===p.category?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <button class="rm" onclick="removeFile(${i})">Remove</button>
+    `;
+    list.appendChild(row);
+  });
+}
+function removeFile(i) { state.files.splice(i,1); renderPhotoList(); }
+
+/* ========= Phone number formatting (kept for parity with any tel fields added later) ========= */
+function formatPhoneNumber(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 10);
+  const len = digits.length;
+  if (len === 0) return '';
+  if (len < 4) return '(' + digits;
+  if (len < 7) return '(' + digits.slice(0, 3) + ')-' + digits.slice(3);
+  return '(' + digits.slice(0, 3) + ')-' + digits.slice(3, 6) + '-' + digits.slice(6);
+}
+document.addEventListener('input', (e) => {
+  if (e.target.matches('input[type="tel"]')) { e.target.value = formatPhoneNumber(e.target.value); }
+});
+
+/* ========= Step 5: Carrier / Employee ========= */
+function validatePeople() {
+  const el = document.getElementById('f_employeeName');
+  if (!el.value.trim()) { el.focus(); el.style.borderColor = 'var(--danger)'; return; }
+  el.style.borderColor = '';
+  renderReview();
+  goTo('review');
+  initSignaturePad('carrier');
+  initSignaturePad('employee');
+}
+
+/* ========= Review ========= */
+function section(title, rows, screenName) {
+  const visible = rows.filter(([k,v,always]) => always || (v && String(v).trim() !== ''));
+  if (visible.length === 0) return '';
+  return `<div class="rv-section">
+    <h4>${title} <button class="rv-edit" style="float:right;" onclick="goTo('${screenName}')">Edit</button></h4>
+    ${visible.map(([k,v]) => `<div class="rv-row"><span class="k">${k}</span><span class="v">${v || '—'}</span></div>`).join('')}
+  </div>`;
+}
+function renderReview() {
+  const c = document.getElementById('reviewContent');
+  let html = '';
+
+  html += section('Shipment', [
+    ['Shipment Number', val('f_shipmentNumber'), true],
+    ['Receive Date', val('f_receiveDate'), true],
+    ['Carrier', val('f_carrierCompany'), true],
+    ['Trailer Number', val('f_trailerNumber'), true],
+    ['Seal Number', val('f_sealNumber'), true],
+    ['Seal Intact', val('f_sealIntact'), true],
+  ], 'claim');
+
+  let productsHtml = `<div class="rv-section"><h4>Products <button class="rv-edit" style="float:right;" onclick="goTo('products')">Edit</button></h4>`;
+  state.products.forEach((id, i) => {
+    const p = `p${id}`;
+    productsHtml += `<div class="rv-product">
+      <div class="rv-row"><span class="k">Product ${i+1}</span><span class="v">${val(`${p}_product`) || '—'}</span></div>
+      <div class="rv-row"><span class="k">Supplier</span><span class="v">${val(`${p}_supplier`) || '—'}</span></div>
+      <div class="rv-row"><span class="k">Quantity</span><span class="v">${val(`${p}_quantity`) || '—'}</span></div>
+      <div class="rv-row"><span class="k">Code Date(s)</span><span class="v">${val(`${p}_codeDates`) || '—'}</span></div>
+      <div class="rv-row"><span class="k">Invoice #</span><span class="v">${val(`${p}_invoiceNumber`) || '—'}</span></div>
+      <div class="rv-row"><span class="k">Invoice Date</span><span class="v">${val(`${p}_invoiceDate`) || '—'}</span></div>
+    </div>`;
+  });
+  productsHtml += `</div>`;
+  html += productsHtml;
+
+  html += section('Description & Labor', [
+    ['Description', val('f_description'), true],
+    ['Labor Costs', val('f_laborCosts')],
+  ], 'description');
+
+  const fileRows = [['Files Attached', state.files.length + ' file(s)', true]];
+  state.files.forEach((p, i) => fileRows.push([`File ${i+1}`, `${p.name} — ${p.category}`]));
+  html += section('Photos & Documents', fileRows, 'photos');
+
+  html += section('Carrier & Employee', [
+    ['Employee Name', val('f_employeeName'), true],
+    ['Carrier Name', val('f_carrierRepName')],
+    ['Carrier Driver Name', val('f_carrierDriverName')],
+  ], 'people');
+
+  c.innerHTML = html;
+}
+
+/* ========= Signatures (generalized for 'carrier' and 'employee') ========= */
+const sig = {
+  carrier: { mode:'draw', hasContent:false, canvas:null, ctx:null, initialized:false },
+  employee: { mode:'draw', hasContent:false, canvas:null, ctx:null, initialized:false }
+};
+
+function initSignaturePad(prefix) {
+  const s = sig[prefix];
+  if (s.initialized) return;
+  s.canvas = document.getElementById(`sigCanvas_${prefix}`);
+  s.ctx = s.canvas.getContext('2d');
+
+  const rect = s.canvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  s.canvas.width = rect.width * ratio;
+  s.canvas.height = rect.height * ratio;
+  s.ctx.scale(ratio, ratio);
+  s.ctx.strokeStyle = '#16203A';
+  s.ctx.lineWidth = 2.2;
+  s.ctx.lineCap = 'round';
+  s.ctx.lineJoin = 'round';
+
+  let drawing = false;
+  function getPos(e) {
+    const r = s.canvas.getBoundingClientRect();
+    if (e.touches && e.touches.length) return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top };
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+  function startDraw(e) {
+    e.preventDefault();
+    drawing = true;
+    document.getElementById(`sigPlaceholder_${prefix}`).style.display = 'none';
+    const pos = getPos(e);
+    s.ctx.beginPath();
+    s.ctx.moveTo(pos.x, pos.y);
+  }
+  function moveDraw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    s.ctx.lineTo(pos.x, pos.y);
+    s.ctx.stroke();
+    s.hasContent = true;
+    if (prefix === 'employee') clearSigError();
+  }
+  function endDraw() { drawing = false; }
+
+  s.canvas.addEventListener('mousedown', startDraw);
+  s.canvas.addEventListener('mousemove', moveDraw);
+  window.addEventListener('mouseup', endDraw);
+  s.canvas.addEventListener('touchstart', startDraw, { passive: false });
+  s.canvas.addEventListener('touchmove', moveDraw, { passive: false });
+  s.canvas.addEventListener('touchend', endDraw);
+
+  s.initialized = true;
+}
+function clearSignature(prefix) {
+  const s = sig[prefix];
+  s.ctx.clearRect(0, 0, s.canvas.width, s.canvas.height);
+  s.hasContent = false;
+  document.getElementById(`sigPlaceholder_${prefix}`).style.display = '';
+}
+function switchSignatureMode(prefix, mode) {
+  sig[prefix].mode = mode;
+  document.getElementById(`sigTabDraw_${prefix}`).classList.toggle('active', mode === 'draw');
+  document.getElementById(`sigTabType_${prefix}`).classList.toggle('active', mode === 'type');
+  document.getElementById(`sigDrawWrap_${prefix}`).style.display = mode === 'draw' ? '' : 'none';
+  document.getElementById(`sigTypeWrap_${prefix}`).style.display = mode === 'type' ? '' : 'none';
+  if (prefix === 'employee') clearSigError();
+}
+function clearSigError() { document.getElementById('sigError').style.display = 'none'; }
+function hasValidSignature(prefix) {
+  const s = sig[prefix];
+  if (s.mode === 'draw') return s.hasContent;
+  return document.getElementById(`sigTypedName_${prefix}`).value.trim().length > 0;
+}
+function getSignatureData(prefix) {
+  const s = sig[prefix];
+  if (s.mode === 'draw') return s.hasContent ? s.canvas.toDataURL('image/png') : '';
+  return document.getElementById(`sigTypedName_${prefix}`).value.trim();
+}
+
+/* ========= Turnstile ========= */
+function onTurnstileOK(token) { state.turnstileToken = token; turnstileOK = true; }
+
+/* ========= Submit ========= */
+async function submitClaim() {
+  const errorBanner = document.getElementById('submitError');
+  errorBanner.classList.remove('show');
+
+  // Honeypot check — if filled, silently pretend to succeed (don't tip off the bot)
+  if (document.getElementById('hp_website').value) {
+    goTo('success');
+    return;
+  }
+
+  // Real Turnstile site key is in place, so this is enforced.
+  if (!turnstileOK) {
+    errorBanner.textContent = 'Please complete the verification checkbox above before submitting.';
+    errorBanner.classList.add('show');
+    return;
+  }
+  errorBanner.textContent = 'Something went wrong submitting your claim. Please try again.';
+
+  // Employee signature required; carrier signature is always optional.
+  if (!hasValidSignature('employee')) {
+    document.getElementById('sigError').style.display = 'block';
+    document.getElementById('sigError').scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  const referenceId = 'LD-' + new Date().toISOString().replace(/[-:T.Z]/g,'').slice(0,14);
+  const carrierSigned = hasValidSignature('carrier');
+
+  const payload = {
+    turnstileToken: state.turnstileToken,
+    honeypot: '', // always sent empty by real users
+    referenceId,
+    dateSubmitted: new Date().toISOString(),
+
+    shipmentNumber: val('f_shipmentNumber'),
+    receiveDate: val('f_receiveDate'),
+    carrier: val('f_carrierCompany'),
+    trailerNumber: val('f_trailerNumber'),
+    sealNumber: val('f_sealNumber'),
+    sealIntact: val('f_sealIntact'),
+
+    description: val('f_description'),
+    laborCosts: val('f_laborCosts'),
+
+    products: state.products.map(id => {
+      const p = `p${id}`;
+      return {
+        supplier: val(`${p}_supplier`),
+        product: val(`${p}_product`),
+        quantity: val(`${p}_quantity`),
+        codeDates: val(`${p}_codeDates`),
+        invoiceNumber: val(`${p}_invoiceNumber`),
+        invoiceDate: val(`${p}_invoiceDate`)
+      };
+    }),
+
+    files: state.files.map(p => ({ name: p.name, category: p.category, isPdf: p.isPdf, contentBytes: p.dataUrl.split(',')[1] })),
+
+    employeeName: val('f_employeeName'),
+    carrierRepName: val('f_carrierRepName'),
+    carrierDriverName: val('f_carrierDriverName'),
+
+    carrierSignatureObtained: carrierSigned,
+    carrierSignature: carrierSigned ? getSignatureData('carrier') : '',
+    carrierSignatureType: carrierSigned ? sig.carrier.mode : '',
+    carrierSignatureDate: carrierSigned ? new Date().toISOString() : '',
+
+    employeeSignature: getSignatureData('employee'),
+    employeeSignatureType: sig.employee.mode,
+    employeeSignatureDate: new Date().toISOString()
+  };
+
+  // Replace this with your Power Automate "When an HTTP request is received" URL once the new intake flow is built.
+  const ENDPOINT = 'REPLACE_WITH_POWER_AUTOMATE_HTTP_TRIGGER_URL';
+  const isPreview = ENDPOINT.includes('REPLACE_WITH');
+
+  if (isPreview) {
+    console.log('PREVIEW MODE — payload that will be sent once ENDPOINT is set:', payload);
+    document.getElementById('finalCaseId').textContent = referenceId + ' (preview — not actually sent)';
+    document.getElementById('caseIdBadge').textContent = referenceId;
+    goTo('success');
+    return;
+  }
+
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Bad response: ' + res.status);
+    document.getElementById('finalCaseId').textContent = referenceId;
+    document.getElementById('caseIdBadge').textContent = referenceId;
+    goTo('success');
+  } catch (err) {
+    errorBanner.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'Submit Claim';
+  }
+}
+
+/* ========= Init ========= */
+addProduct();
+renderStepper('home');
+</script>
+</body>
+</html>
