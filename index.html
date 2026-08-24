@@ -172,6 +172,20 @@
   }
   .line-item-remove:disabled { color: var(--muted); cursor: not-allowed; }
 
+  .field-typeahead { position: relative; }
+  .typeahead-list {
+    position: absolute; left: 0; right: 0; top: 100%; z-index: 20;
+    background: var(--card); border: 1.5px solid var(--line); border-radius: 8px;
+    box-shadow: var(--shadow); margin-top: 4px; max-height: 240px; overflow-y: auto; display: none;
+  }
+  .typeahead-list.show { display: block; }
+  .typeahead-item { padding: 10px 13px; cursor: pointer; }
+  .typeahead-item:not(:last-child) { border-bottom: 1px solid var(--line); }
+  .typeahead-item:hover, .typeahead-item.active { background: #EEF1F7; }
+  .typeahead-item .ta-name { font-weight: 600; font-size: 14px; color: var(--ink); }
+  .typeahead-item .ta-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .typeahead-empty { padding: 10px 13px; font-size: 13px; color: var(--muted); }
+
   .dropzone {
     border: 2px dashed var(--line); border-radius: 10px; padding: 28px 16px; text-align: center;
     color: var(--muted); font-size: 14px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
@@ -516,6 +530,9 @@
       <p class="screen-desc" style="text-align:center; max-width:420px; margin-left:auto; margin-right:auto;">
         Your claim has been submitted. Reference number: <strong id="finalCaseId"></strong>
       </p>
+      <p style="text-align:center; display:none;" id="finalPdfLinkWrap">
+        <a id="finalPdfLinkAnchor" href="#" target="_blank" rel="noopener" style="color:var(--slate-light); font-weight:600; font-size:14px;">View the final claim PDF →</a>
+      </p>
     </div>
   </section>
 
@@ -534,6 +551,9 @@ const state = {
 };
 let nextProductId = 1;
 let turnstileOK = false;
+
+// "Loss and Damage Product Search" flow — powers the Product field's typeahead.
+const SEARCH_ENDPOINT = 'https://default0c07cc35444246a2a2b1a250d653b9.2f.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/22/workflows/3be4fa0e77ee4e9f85bf50dae8ec55e0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=GL4LSEc0Dl1M9nY8f4bhxU1roFE1RVyo9NIorcUPLoA';
 
 const FLOW = ['home','claim','products','description','photos','people','review','success'];
 
@@ -594,8 +614,12 @@ function renderProducts() {
     block.innerHTML = `
       <h4>Product ${i+1} <button type="button" class="line-item-remove" onclick="removeProduct(${id})" ${state.products.length<=1?'disabled':''}>Remove</button></h4>
       <div class="field-row">
+        <div class="field field-typeahead">
+          <label>Product <span class="req">*</span></label>
+          <input type="text" id="${prefix}_product" placeholder="Start typing a product name…" autocomplete="off" oninput="onProductInput(${id})">
+          <div class="typeahead-list" id="${prefix}_productList"></div>
+        </div>
         <div class="field"><label>Supplier <span class="req">*</span></label><input type="text" id="${prefix}_supplier" placeholder="Supplier"></div>
-        <div class="field"><label>Product <span class="req">*</span></label><input type="text" id="${prefix}_product" placeholder="Product"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Quantity <span class="req">*</span></label><input type="number" id="${prefix}_quantity" placeholder="Quantity" min="1"></div>
@@ -622,6 +646,79 @@ function validateProducts() {
   errEl.style.display = 'none';
   goTo('description');
 }
+
+/* ========= Product typeahead (Encompass mirror list search) ========= */
+const typeaheadTimers = {};
+const typeaheadResults = {};
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+function onProductInput(id) {
+  const prefix = `p${id}`;
+  const term = val(`${prefix}_product`).trim();
+  const listEl = document.getElementById(`${prefix}_productList`);
+
+  clearTimeout(typeaheadTimers[id]);
+  if (term.length < 2) { listEl.classList.remove('show'); listEl.innerHTML = ''; return; }
+
+  typeaheadTimers[id] = setTimeout(async () => {
+    try {
+      const res = await fetch(SEARCH_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ searchTerm: term })
+      });
+      if (!res.ok) throw new Error('Bad response: ' + res.status);
+      const results = await res.json();
+      renderTypeahead(id, Array.isArray(results) ? results : []);
+    } catch (err) {
+      // Typeahead is a convenience, not required for submission — fail silently.
+      listEl.classList.remove('show');
+    }
+  }, 300);
+}
+
+function renderTypeahead(id, results) {
+  const prefix = `p${id}`;
+  const listEl = document.getElementById(`${prefix}_productList`);
+  typeaheadResults[id] = results;
+
+  if (!results.length) {
+    listEl.innerHTML = `<div class="typeahead-empty">No matching products found</div>`;
+    listEl.classList.add('show');
+    return;
+  }
+  listEl.innerHTML = results.map((r, i) => `
+    <div class="typeahead-item" onmousedown="selectProduct(${id}, ${i})">
+      <div class="ta-name">${escapeHtml(r.productName)}</div>
+      <div class="ta-meta">${[r.supplier, r.brand, r.package].filter(Boolean).map(escapeHtml).join(' · ')}</div>
+    </div>
+  `).join('');
+  listEl.classList.add('show');
+}
+
+function selectProduct(id, index) {
+  const prefix = `p${id}`;
+  const r = (typeaheadResults[id] || [])[index];
+  if (!r) return;
+  document.getElementById(`${prefix}_product`).value = r.productName || '';
+  document.getElementById(`${prefix}_supplier`).value = r.supplier || '';
+  const listEl = document.getElementById(`${prefix}_productList`);
+  listEl.classList.remove('show');
+  listEl.innerHTML = '';
+}
+
+// Click outside a typeahead dropdown closes it. (Uses mousedown, not click, on the
+// options themselves above, so a selection registers before this blur-style close fires.)
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('.typeahead-list.show').forEach(list => {
+    if (!list.parentElement.contains(e.target)) { list.classList.remove('show'); }
+  });
+});
 
 /* ========= Step 3: Description / Labor ========= */
 function validateDescription() {
@@ -889,10 +986,35 @@ function hasValidSignature(prefix) {
   if (s.mode === 'draw') return s.hasContent;
   return document.getElementById(`sigTypedName_${prefix}`).value.trim().length > 0;
 }
-function getSignatureData(prefix) {
+function rasterizeTypedSignature(name) {
+  const width = 600, height = 160;
+  const canvas = document.createElement('canvas');
+  canvas.width = width; canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = '#16203A';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+
+  let fontSize = 56;
+  ctx.font = `${fontSize}px 'Dancing Script', cursive`;
+  let m = ctx.measureText(name);
+  while (m.width > width - 40 && fontSize > 20) {
+    fontSize -= 2;
+    ctx.font = `${fontSize}px 'Dancing Script', cursive`;
+    m = ctx.measureText(name);
+  }
+  ctx.fillText(name, (width - m.width) / 2, height / 2);
+  return canvas.toDataURL('image/png');
+}
+async function getSignatureData(prefix) {
   const s = sig[prefix];
   if (s.mode === 'draw') return s.hasContent ? s.canvas.toDataURL('image/png') : '';
-  return document.getElementById(`sigTypedName_${prefix}`).value.trim();
+  const typedName = document.getElementById(`sigTypedName_${prefix}`).value.trim();
+  if (!typedName) return '';
+  try { await document.fonts.load(`56px 'Dancing Script'`); } catch (err) { /* fall back to default rendering */ }
+  return rasterizeTypedSignature(typedName);
 }
 
 /* ========= Turnstile ========= */
@@ -966,17 +1088,16 @@ async function submitClaim() {
     carrierDriverName: val('f_carrierDriverName'),
 
     carrierSignatureObtained: carrierSigned,
-    carrierSignature: carrierSigned ? getSignatureData('carrier') : '',
+    carrierSignature: carrierSigned ? await getSignatureData('carrier') : '',
     carrierSignatureType: carrierSigned ? sig.carrier.mode : '',
     carrierSignatureDate: carrierSigned ? new Date().toISOString() : '',
 
-    employeeSignature: getSignatureData('employee'),
+    employeeSignature: await getSignatureData('employee'),
     employeeSignatureType: sig.employee.mode,
     employeeSignatureDate: new Date().toISOString()
   };
 
-  // Replace this with your Power Automate "When an HTTP request is received" URL once the new intake flow is built.
-  const ENDPOINT = 'REPLACE_WITH_POWER_AUTOMATE_HTTP_TRIGGER_URL';
+  const ENDPOINT = 'https://default0c07cc35444246a2a2b1a250d653b9.2f.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/15/workflows/9d9a7822b7b4477c8c9fcf33d1d612dd/triggers/manual/paths/invoke?api-version=1';
   const isPreview = ENDPOINT.includes('REPLACE_WITH');
 
   if (isPreview) {
@@ -994,8 +1115,14 @@ async function submitClaim() {
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error('Bad response: ' + res.status);
-    document.getElementById('finalCaseId').textContent = referenceId;
-    document.getElementById('caseIdBadge').textContent = referenceId;
+    const result = await res.json().catch(() => ({}));
+    const finalRef = result.referenceId || referenceId;
+    document.getElementById('finalCaseId').textContent = finalRef;
+    document.getElementById('caseIdBadge').textContent = finalRef;
+    if (result.finalPdfLink) {
+      document.getElementById('finalPdfLinkAnchor').href = result.finalPdfLink;
+      document.getElementById('finalPdfLinkWrap').style.display = 'block';
+    }
     goTo('success');
   } catch (err) {
     errorBanner.classList.add('show');
