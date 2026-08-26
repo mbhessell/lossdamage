@@ -657,29 +657,66 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+const typeaheadAbortControllers = {};
+const SEARCH_TIMEOUT_MS = 10000;
+
 function onProductInput(id) {
   const prefix = `p${id}`;
   const term = val(`${prefix}_product`).trim();
   const listEl = document.getElementById(`${prefix}_productList`);
 
   clearTimeout(typeaheadTimers[id]);
+  if (typeaheadAbortControllers[id]) { typeaheadAbortControllers[id].abort(); }
   if (term.length < 2) { listEl.classList.remove('show'); listEl.innerHTML = ''; return; }
 
   typeaheadTimers[id] = setTimeout(async () => {
+    // Show a "Searching…" state immediately so a slow response doesn't look stuck/dead.
+    listEl.innerHTML = `<div class="typeahead-empty">Searching…</div>`;
+    listEl.classList.add('show');
+
+    const controller = new AbortController();
+    typeaheadAbortControllers[id] = controller;
+    const timeoutId = setTimeout(() => controller.abort(), SEARCH_TIMEOUT_MS);
+
     try {
       const res = await fetch(SEARCH_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ searchTerm: term })
+        body: JSON.stringify({ searchTerm: term }),
+        signal: controller.signal
       });
       if (!res.ok) throw new Error('Bad response: ' + res.status);
-      const results = await res.json();
-      renderTypeahead(id, Array.isArray(results) ? results : []);
+      const raw = await res.json();
+      renderTypeahead(id, normalizeSearchResults(raw));
     } catch (err) {
-      // Typeahead is a convenience, not required for submission — fail silently.
-      listEl.classList.remove('show');
+      // Typeahead is a convenience, not required for submission — fail quietly but visibly.
+      listEl.innerHTML = `<div class="typeahead-empty">${err.name === 'AbortError' ? 'Search timed out' : 'Search unavailable'} — you can still type the product name manually</div>`;
+      listEl.classList.add('show');
+    } finally {
+      clearTimeout(timeoutId);
     }
   }, 300);
+}
+
+// Defensive against a malformed flow response (e.g. a Power Automate loop bug that wraps
+// each result in a nested duplicate array instead of returning one flat array). Flattens
+// one level if needed and de-dupes by productId/productName so a backend hiccup degrades
+// to "fewer/odd results" instead of blank rows.
+function normalizeSearchResults(raw) {
+  let results = Array.isArray(raw) ? raw : [];
+  if (results.length && Array.isArray(results[0])) {
+    results = results.flat();
+  }
+  const seen = new Set();
+  const deduped = [];
+  for (const r of results) {
+    if (!r || typeof r !== 'object' || !r.productName) continue;
+    const key = r.productId != null ? String(r.productId) : r.productName;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(r);
+  }
+  return deduped;
 }
 
 function renderTypeahead(id, results) {
