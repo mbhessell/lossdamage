@@ -606,6 +606,14 @@ function removeProduct(id) {
 }
 function renderProducts() {
   const wrap = document.getElementById('productBlocks');
+  const savedValues = {};
+  state.products.forEach(id => {
+    const prefix = `p${id}`;
+    ['product','supplier','quantity','codeDates','invoiceNumber','invoiceDate'].forEach(field => {
+      const el = document.getElementById(`${prefix}_${field}`);
+      if (el) savedValues[`${prefix}_${field}`] = el.value;
+    });
+  });
   wrap.innerHTML = '';
   state.products.forEach((id, i) => {
     const prefix = `p${id}`;
@@ -631,6 +639,13 @@ function renderProducts() {
       </div>
     `;
     wrap.appendChild(block);
+    ['product','supplier','quantity','codeDates','invoiceNumber','invoiceDate'].forEach(field => {
+      const key = `${prefix}_${field}`;
+      if (savedValues[key] !== undefined) {
+        const el = document.getElementById(key);
+        if (el) el.value = savedValues[key];
+      }
+    });
   });
 }
 function validateProducts() {
