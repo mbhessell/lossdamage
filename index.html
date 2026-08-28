@@ -829,7 +829,15 @@ async function handleFiles(fileList) {
       }
     }
     compressImage(workingFile).then(dataUrl => {
-      state.files.push({ file: workingFile, dataUrl, category, name: workingFile.name, isPdf: false });
+      // compressImage re-encodes to JPEG via <canvas> whenever it can decode the source image,
+      // regardless of the original format (png/jpeg/webp/etc) — so the stored filename's
+      // extension must match the ACTUAL bytes in dataUrl, or Adobe's PDF conversion step
+      // rejects it (BadRequest) when the extension and content disagree.
+      const mimeMatch = /^data:([^;]+);/.exec(dataUrl);
+      const mime = mimeMatch ? mimeMatch[1] : '';
+      const ext = mime === 'image/jpeg' ? '.jpg' : mime === 'image/png' ? '.png' : null;
+      const fixedName = ext ? workingFile.name.replace(/\.[^./\\]+$/, '') + ext : workingFile.name;
+      state.files.push({ file: workingFile, dataUrl, category, name: fixedName, isPdf: false });
       renderPhotoList();
     });
   }
