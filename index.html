@@ -1134,7 +1134,7 @@ async function submitClaim() {
     employeeSignatureDate: new Date().toISOString()
   };
 
-  const ENDPOINT = 'https://default0c07cc35444246a2a2b1a250d653b9.2f.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/15/workflows/9d9a7822b7b4477c8c9fcf33d1d612dd/triggers/manual/paths/invoke?api-version=1';
+  const ENDPOINT = 'https://default0c07cc35444246a2a2b1a250d653b9.2f.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/15/workflows/9d9a7822b7b4477c8c9fcf33d1d612dd/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=eOw0I4AEGM9lZixanU7aYDnhRRG2K5r4wAFSoqsTdkw';
   const isPreview = ENDPOINT.includes('REPLACE_WITH');
 
   if (isPreview) {
