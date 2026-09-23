@@ -672,43 +672,56 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-const typeaheadAbortControllers = {};
-const SEARCH_TIMEOUT_MS = 10000;
-
+// Replaces everything from "const typeaheadAbortControllers = {};" through the closing "}"
+// of onProductInput() in index.html (currently lines 675-714).
+//
+// Change: an earlier search is no longer cancelled when the user keeps typing. Its result is
+// simply ignored if a newer search has started. That way Power Automate always gets to send
+// its Response (no more false "ActionResponseTimedOut" failure alerts), and the list only
+// ever shows results for what's currently in the box.
+ 
+const typeaheadSeq = {};          // latest search number per product row
+const SEARCH_TIMEOUT_MS = 10000;  // after this, show a hint — but don't cancel the request
+ 
 function onProductInput(id) {
   const prefix = `p${id}`;
-  const term = val(`${prefix}_product`).trim();
+  // Collapse repeated spaces so "jack  bolder" searches the same as "jack bolder".
+  const term = val(`${prefix}_product`).trim().replace(/\s+/g, ' ');
   const listEl = document.getElementById(`${prefix}_productList`);
-
+ 
   clearTimeout(typeaheadTimers[id]);
-  if (typeaheadAbortControllers[id]) { typeaheadAbortControllers[id].abort(); }
+  const mySeq = (typeaheadSeq[id] = (typeaheadSeq[id] || 0) + 1);
   if (term.length < 2) { listEl.classList.remove('show'); listEl.innerHTML = ''; return; }
-
+ 
   typeaheadTimers[id] = setTimeout(async () => {
     // Show a "Searching…" state immediately so a slow response doesn't look stuck/dead.
     listEl.innerHTML = `<div class="typeahead-empty">Searching…</div>`;
     listEl.classList.add('show');
-
-    const controller = new AbortController();
-    typeaheadAbortControllers[id] = controller;
-    const timeoutId = setTimeout(() => controller.abort(), SEARCH_TIMEOUT_MS);
-
+ 
+    const isCurrent = () => typeaheadSeq[id] === mySeq;
+    const slowId = setTimeout(() => {
+      if (!isCurrent()) return;
+      listEl.innerHTML = `<div class="typeahead-empty">Search is taking longer than usual — you can keep waiting or type the product name manually</div>`;
+      listEl.classList.add('show');
+    }, SEARCH_TIMEOUT_MS);
+ 
     try {
       const res = await fetch(SEARCH_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ searchTerm: term }),
-        signal: controller.signal
+        body: JSON.stringify({ searchTerm: term })
       });
       if (!res.ok) throw new Error('Bad response: ' + res.status);
       const raw = await res.json();
+      if (!isCurrent()) return;  // user has typed more since — a newer search will render
       renderTypeahead(id, normalizeSearchResults(raw));
     } catch (err) {
+      if (!isCurrent()) return;
       // Typeahead is a convenience, not required for submission — fail quietly but visibly.
-      listEl.innerHTML = `<div class="typeahead-empty">${err.name === 'AbortError' ? 'Search timed out' : 'Search unavailable'} — you can still type the product name manually</div>`;
+      listEl.innerHTML = `<div class="typeahead-empty">Search unavailable — you can still type the product name manually</div>`;
       listEl.classList.add('show');
     } finally {
-      clearTimeout(timeoutId);
+      clearTimeout(slowId);
     }
   }, 300);
 }
